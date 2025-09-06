@@ -5,7 +5,8 @@ import ru.practicum.shareit.item.model.Item;
 
 // Маппер между Item и ItemDto
 public final class ItemMapper {
-    private ItemMapper() {}
+    private ItemMapper() {
+    }
 
     public static ItemDto toDto(Item item) {
         if (item == null) return null;

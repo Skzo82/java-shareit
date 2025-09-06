@@ -2,7 +2,8 @@ package ru.practicum.shareit.user;
 
 // Маппер между User и UserDto
 public final class UserMapper {
-    private UserMapper() {}
+    private UserMapper() {
+    }
 
     public static UserDto toDto(User user) {
         if (user == null) return null;
