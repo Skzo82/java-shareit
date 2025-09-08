@@ -1,69 +1,64 @@
 package ru.practicum.shareit.user;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.BadRequestException;
 import ru.practicum.shareit.exception.ConflictException;
-import ru.practicum.shareit.exception.NotFoundException;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class InMemoryUserService implements UserService {
-    private final Map<Long, User> storage = new ConcurrentHashMap<>();
-    private final AtomicLong seq = new AtomicLong(0);
+
+    private final UserRepository userRepository;
 
     @Override
     public User create(User user) {
         validateEmail(user.getEmail());
         ensureEmailUnique(user.getEmail(), null);
-        user.setId(seq.incrementAndGet());
-        storage.put(user.getId(), user);
-        return user;
+        return userRepository.save(user);
     }
 
     @Override
     public User getById(Long id) {
-        User u = storage.get(id);
-        if (u == null) throw new NotFoundException("User not found: " + id);
-        return u;
+        return userRepository.getById(id);
     }
 
     @Override
     public List<User> getAll() {
-        return new ArrayList<>(storage.values());
+        return userRepository.findAll();
     }
 
     @Override
     public User update(Long id, UserDto patch) {
-        User existing = getById(id);
+        User existing = userRepository.getById(id);
         if (patch.getEmail() != null) {
             validateEmail(patch.getEmail());
-            // Разрешаем ту же самую почту у самого пользователя
             if (!patch.getEmail().equals(existing.getEmail())) {
                 ensureEmailUnique(patch.getEmail(), id);
             }
         }
-        UserMapper.merge(existing, patch);
-        return existing;
+        if (patch.getName() != null) existing.setName(patch.getName());
+        if (patch.getEmail() != null) existing.setEmail(patch.getEmail());
+        return userRepository.save(existing);
     }
 
     @Override
     public void delete(Long id) {
-        storage.remove(id);
+        userRepository.deleteById(id);
     }
 
     private void validateEmail(String email) {
-        if (email == null || !email.contains("@"))
+        if (email == null || !email.contains("@")) {
             throw new BadRequestException("Email is invalid");
+        }
     }
 
     private void ensureEmailUnique(String email, Long selfId) {
-        boolean exists = storage.values().stream()
-                .anyMatch(u -> u.getEmail() != null
-                        && u.getEmail().equalsIgnoreCase(email)
-                        && (selfId == null || !u.getId().equals(selfId)));
-        if (exists) throw new ConflictException("Email already exists: " + email);
+        User found = userRepository.findByEmailIgnoreCase(email);
+        if (found != null && (selfId == null || !found.getId().equals(selfId))) {
+            throw new ConflictException("Email already exists: " + email);
+        }
     }
 }
