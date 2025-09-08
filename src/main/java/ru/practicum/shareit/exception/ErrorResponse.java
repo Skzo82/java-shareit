@@ -11,6 +11,11 @@ public class ErrorResponse {
         this.message = message;
     }
 
-    public String getMessage() { return message; }
-    public Instant getTimestamp() { return timestamp; }
+    public String getMessage() {
+        return message;
+    }
+
+    public Instant getTimestamp() {
+        return timestamp;
+    }
 }
