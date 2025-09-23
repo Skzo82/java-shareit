@@ -29,7 +29,7 @@ public class ItemController {
 
     @PostMapping
     public ItemDto create(@RequestHeader("X-Sharer-User-Id") Long ownerId,
-                          @RequestBody @jakarta.validation.Valid ItemDto dto) { 
+                          @RequestBody @jakarta.validation.Valid ItemDto dto) {
         return itemService.create(ownerId, dto);
     }
 
