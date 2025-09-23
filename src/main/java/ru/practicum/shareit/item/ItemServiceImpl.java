@@ -8,9 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
-import ru.practicum.shareit.error.ForbiddenException;
 import ru.practicum.shareit.error.NotFoundException;
 import ru.practicum.shareit.error.ValidationException;
+import ru.practicum.shareit.item.dto.CommentCreateDto;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Comment;
@@ -32,7 +32,7 @@ public class ItemServiceImpl implements ItemService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
 
-    // offset-пагинация (from/size) → PageRequest
+    // утилита: переводим from/size в Pageable (offset → page)
     private Pageable pageOf(int from, int size) {
         if (from < 0 || size <= 0) {
             throw new ValidationException("Invalid pagination params: from=" + from + ", size=" + size);
@@ -40,10 +40,107 @@ public class ItemServiceImpl implements ItemService {
         return PageRequest.of(from / size, size);
     }
 
+    // детальный просмотр вещи: с комментариями и last/next бронированиями (для владельца)
+    @Override
+    public ItemDto getItemById(Long viewerId, Long itemId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Item not found: " + itemId));
+
+        List<Comment> comments = commentRepository.findByItemIdOrderByCreatedDesc(itemId);
+
+        if (item.getOwner().getId().equals(viewerId)) {
+            LocalDateTime now = LocalDateTime.now();
+            Booking last = bookingRepository.findTop1ByItemIdAndStartBeforeAndStatusOrderByEndDesc(
+                    itemId, now, BookingStatus.APPROVED);
+            Booking next = bookingRepository.findTop1ByItemIdAndStartAfterAndStatusOrderByStartAsc(
+                    itemId, now, BookingStatus.APPROVED);
+            return ItemMapper.toDto(item, last, next, comments);
+        } else {
+            ItemDto dto = ItemMapper.toDto(item);
+            dto.setComments(ItemMapper.toCommentDtoList(comments));
+            return dto;
+        }
+    }
+
+    // список вещей владельца: с last/next и комментариями
+    @Override
+    public List<ItemDto> getItemsByOwner(Long ownerId, int from, int size) {
+        Pageable pageable = pageOf(from, size);
+
+        return itemRepository.findByOwnerId(ownerId, pageable)
+                .getContent()
+                .stream()
+                .map(item -> {
+                    LocalDateTime now = LocalDateTime.now();
+                    Booking last = bookingRepository.findTop1ByItemIdAndStartBeforeAndStatusOrderByEndDesc(
+                            item.getId(), now, BookingStatus.APPROVED);
+                    Booking next = bookingRepository.findTop1ByItemIdAndStartAfterAndStatusOrderByStartAsc(
+                            item.getId(), now, BookingStatus.APPROVED);
+                    List<Comment> comments = commentRepository.findByItemIdOrderByCreatedDesc(item.getId());
+                    return ItemMapper.toDto(item, last, next, comments);
+                })
+                .collect(Collectors.toList());
+    }
+
+    // поиск вещей по тексту (без last/next, только доступные)
+    @Override
+    public List<ItemDto> search(String text, int from, int size) {
+        if (text == null || text.isBlank()) return List.of();
+        Pageable pageable = pageOf(from, size);
+        return itemRepository.search(text, pageable)
+                .getContent()
+                .stream()
+                .map(item -> {
+                    ItemDto dto = ItemMapper.toDto(item);
+                    dto.setComments(ItemMapper.toCommentDtoList(
+                            commentRepository.findByItemIdOrderByCreatedDesc(item.getId())
+                    ));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
     @Override
     @Transactional
-    public CommentDto addComment(Long userId, Long itemId, CommentDto dto) {
-        // 1) проверяем пользователя и вещь
+    public ItemDto create(Long ownerId, ItemDto dto) {
+        // проверки: владелец существует, name non vuoto, available non null
+        User owner = userRepository.findById(ownerId)
+                .orElseThrow(() -> new NotFoundException("owner not found"));
+        if (dto.getName() == null || dto.getName().isBlank()) {
+            throw new ValidationException("name required");
+        }
+        if (dto.getAvailable() == null) {
+            throw new ValidationException("available required");
+        }
+        // description может быть пустым → без проверки
+        Item item = new Item();
+        item.setName(dto.getName());
+        item.setDescription(dto.getDescription());
+        item.setAvailable(dto.getAvailable());
+        item.setOwner(owner);
+        Item saved = itemRepository.save(item);
+        return ItemMapper.toDto(saved);
+    }
+
+    @Override
+    @Transactional
+    public ItemDto update(Long ownerId, ItemDto dto) {
+        Item item = itemRepository.findById(dto.getId())
+                .orElseThrow(() -> new NotFoundException("item not found"));
+        // только владелец может обновлять вещь
+        if (!item.getOwner().getId().equals(ownerId)) {
+            throw new NotFoundException("Item not found for this owner: " + dto.getId());
+        }
+        if (dto.getName() != null) item.setName(dto.getName());
+        if (dto.getDescription() != null) item.setDescription(dto.getDescription());
+        if (dto.getAvailable() != null) item.setAvailable(dto.getAvailable());
+        return ItemMapper.toDto(itemRepository.save(item));
+    }
+
+    @Override
+    @Transactional
+    public CommentDto addComment(Long userId, Long itemId, CommentCreateDto dto) {
+        // 1) проверки пользователя и вещи
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
         Item item = itemRepository.findById(itemId)
@@ -65,108 +162,12 @@ public class ItemServiceImpl implements ItemService {
 
         Comment saved = commentRepository.save(comment);
 
-        // 4) маппинг в DTO
+        // 4) маппинг в DTO ответа
         return new CommentDto(
                 saved.getId(),
                 saved.getText(),
                 saved.getAuthor().getName(),
                 saved.getCreated()
         );
-    }
-
-    public ItemDto getItemById(Long viewerId, Long itemId) {
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Item not found: " + itemId));
-
-        List<Comment> comments = commentRepository.findByItemIdOrderByCreatedDesc(itemId);
-
-        if (item.getOwner().getId().equals(viewerId)) {
-            LocalDateTime now = LocalDateTime.now();
-            Booking last = bookingRepository.findTop1ByItemIdAndStartBeforeAndStatusOrderByEndDesc(
-                    itemId, now, BookingStatus.APPROVED);
-            Booking next = bookingRepository.findTop1ByItemIdAndStartAfterAndStatusOrderByStartAsc(
-                    itemId, now, BookingStatus.APPROVED);
-            return ItemMapper.toDto(item, last, next, comments);
-        } else {
-            ItemDto dto = ItemMapper.toDto(item);
-            dto.setComments(ItemMapper.toCommentDtoList(comments));
-            return dto;
-        }
-    }
-
-    public List<ItemDto> getItemsByOwner(Long ownerId, int from, int size) {
-        Pageable pageable = pageOf(from, size);
-
-        return itemRepository.findByOwnerId(ownerId, pageable)
-                .stream()
-                .map(item -> {
-                    LocalDateTime now = LocalDateTime.now();
-                    Booking last = bookingRepository.findTop1ByItemIdAndStartBeforeAndStatusOrderByEndDesc(
-                            item.getId(), now, BookingStatus.APPROVED);
-                    Booking next = bookingRepository.findTop1ByItemIdAndStartAfterAndStatusOrderByStartAsc(
-                            item.getId(), now, BookingStatus.APPROVED);
-                    List<Comment> comments = commentRepository.findByItemIdOrderByCreatedDesc(item.getId());
-                    return ItemMapper.toDto(item, last, next, comments);
-                })
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * поиск вещей по тексту (без last/next, только доступные)
-     */
-    public List<ItemDto> search(String text, int from, int size) {
-        if (text == null || text.isBlank()) return List.of();
-        Pageable pageable = pageOf(from, size);
-        return itemRepository.search(text, pageable)
-                .stream()
-                .map(item -> {
-                    ItemDto dto = ItemMapper.toDto(item);
-                    dto.setComments(ItemMapper.toCommentDtoList(
-                            commentRepository.findByItemIdOrderByCreatedDesc(item.getId())
-                    ));
-                    return dto;
-                })
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional
-    public ItemDto create(Long ownerId, ItemDto dto) {
-        // владелец существует
-        User owner = userRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("owner not found"));
-        // валидации, которые ждут тесты
-        if (dto.getName() == null || dto.getName().isBlank()) {
-            throw new ValidationException("name required");
-        }
-        if (dto.getDescription() == null || dto.getDescription().isBlank()) {
-            throw new ValidationException("description required");
-        }
-        if (dto.getAvailable() == null) {
-            throw new ValidationException("available required");
-        }
-
-        Item item = new Item();
-        item.setName(dto.getName());
-        item.setDescription(dto.getDescription());
-        item.setAvailable(dto.getAvailable());
-        item.setOwner(owner);
-
-        Item saved = itemRepository.save(item);
-        return ItemMapper.toDto(saved);
-    }
-
-    @Override
-    @Transactional
-    public ItemDto update(Long ownerId, ItemDto dto) {
-        Item item = itemRepository.findById(dto.getId())
-                .orElseThrow(() -> new NotFoundException("item not found"));
-        if (!item.getOwner().getId().equals(ownerId)) {
-            throw new ForbiddenException("Only owner can update");
-        }
-        if (dto.getName() != null) item.setName(dto.getName());
-        if (dto.getDescription() != null) item.setDescription(dto.getDescription());
-        if (dto.getAvailable() != null) item.setAvailable(dto.getAvailable());
-        return ItemMapper.toDto(itemRepository.save(item));
     }
 }

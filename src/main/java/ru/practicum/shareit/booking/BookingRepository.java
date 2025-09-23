@@ -55,4 +55,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     boolean userHasPastApprovedBooking(@Param("userId") Long userId,
                                        @Param("itemId") Long itemId,
                                        @Param("now") LocalDateTime now);
+
+    @Query("""
+            select count(b) > 0
+            from Booking b
+            where b.item.id = :itemId
+              and b.status = ru.practicum.shareit.booking.model.BookingStatus.APPROVED
+              and b.start < :end and b.end > :start
+            """)
+    boolean existsApprovedOverlap(@Param("itemId") Long itemId,
+                                  @Param("start") LocalDateTime start,
+                                  @Param("end") LocalDateTime end);
 }

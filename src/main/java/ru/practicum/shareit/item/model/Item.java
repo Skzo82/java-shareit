@@ -19,7 +19,7 @@ public class Item {
     @Column(nullable = false)
     private String name;
 
-    @Column(length = 1000)
+    @Column(length = 1000, nullable = true)
     private String description;
 
     @Column(nullable = false)
@@ -28,4 +28,6 @@ public class Item {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
+
+
 }

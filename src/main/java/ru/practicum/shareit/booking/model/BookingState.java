@@ -1,7 +1,13 @@
-package ru.practicum.shareit.booking.dto;
+package ru.practicum.shareit.booking.model;
 
 public enum BookingState {
-    ALL, CURRENT, PAST, FUTURE, WAITING, REJECTED;
+    ALL,
+    CURRENT,
+    PAST,
+    FUTURE,
+    WAITING,
+    REJECTED,
+    CANCELED;
 
     public static BookingState from(String s) {
         try {
