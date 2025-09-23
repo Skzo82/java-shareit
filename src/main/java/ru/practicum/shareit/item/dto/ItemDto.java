@@ -18,6 +18,7 @@ public class ItemDto {
     @NotBlank(message = "Name is required") // имя обязательно
     private String name;
 
+    @NotBlank(message = "Description is required")
     private String description; // описание может быть пустым
 
     @NotNull(message = "Available flag is required") // доступность обязательна
