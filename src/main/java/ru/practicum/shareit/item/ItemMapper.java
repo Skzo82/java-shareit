@@ -11,7 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class ItemMapper {
-    private ItemMapper() { }
+    private ItemMapper() {
+    }
 
     public static ItemDto toDto(Item item) {
         if (item == null) return null;

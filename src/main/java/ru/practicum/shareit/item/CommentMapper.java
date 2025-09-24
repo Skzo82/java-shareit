@@ -7,11 +7,18 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * // Маппер для сущности Comment: преобразование между Entity и DTO
+ */
 public final class CommentMapper {
+
     private CommentMapper() {
     }
 
+    // Создание Comment из DTO запроса + связанной Item и User
     public static Comment toEntityFromCreate(CommentCreateDto dto, Item item, User author, LocalDateTime created) {
         Comment c = new Comment();
         c.setText(dto.getText());
@@ -21,6 +28,7 @@ public final class CommentMapper {
         return c;
     }
 
+    // Преобразование Comment → CommentDto
     public static CommentDto toDto(Comment c) {
         return new CommentDto(
                 c.getId(),
@@ -28,5 +36,15 @@ public final class CommentMapper {
                 c.getAuthor().getName(),
                 c.getCreated()
         );
+    }
+
+    // Преобразование списка Comment → список CommentDto
+    public static List<CommentDto> toDtoList(List<Comment> list) {
+        if (list == null || list.isEmpty()) return new ArrayList<>();
+        List<CommentDto> out = new ArrayList<>(list.size());
+        for (Comment c : list) {
+            out.add(toDto(c));
+        }
+        return out;
     }
 }
