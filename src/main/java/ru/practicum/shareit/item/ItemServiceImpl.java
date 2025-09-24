@@ -32,14 +32,6 @@ public class ItemServiceImpl implements ItemService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
 
-    // утилита: переводим from/size в Pageable (offset → page)
-    private Pageable pageOf(int from, int size) {
-        if (from < 0 || size <= 0) {
-            throw new ValidationException("Invalid pagination params: from=" + from + ", size=" + size);
-        }
-        return PageRequest.of(from / size, size);
-    }
-
     // детальный просмотр вещи: с комментариями и last/next бронированиями (для владельца)
     @Override
     public ItemDto getItemById(Long viewerId, Long itemId) {
@@ -54,10 +46,11 @@ public class ItemServiceImpl implements ItemService {
                     itemId, now, BookingStatus.APPROVED);
             Booking next = bookingRepository.findTop1ByItemIdAndStartAfterAndStatusOrderByStartAsc(
                     itemId, now, BookingStatus.APPROVED);
-            return ItemMapper.toDto(item, last, next, comments);
+            ItemDto dto = ItemMapper.toDto(item, last, next, comments);
+            return dto;
         } else {
             ItemDto dto = ItemMapper.toDto(item);
-            dto.setComments(ItemMapper.toCommentDtoList(comments));
+            dto.setComments(CommentMapper.toDtoList(comments)); // <-- CommentMapper
             return dto;
         }
     }
@@ -92,7 +85,7 @@ public class ItemServiceImpl implements ItemService {
                 .stream()
                 .map(item -> {
                     ItemDto dto = ItemMapper.toDto(item);
-                    dto.setComments(ItemMapper.toCommentDtoList(
+                    dto.setComments(CommentMapper.toDtoList(
                             commentRepository.findByItemIdOrderByCreatedDesc(item.getId())
                     ));
                     return dto;
@@ -153,21 +146,19 @@ public class ItemServiceImpl implements ItemService {
             throw new ValidationException("User has no past approved booking for this item");
         }
 
-        // 3) сохраняем комментарий
-        Comment comment = new Comment();
-        comment.setText(dto.getText());
-        comment.setItem(item);
-        comment.setAuthor(author);
-        comment.setCreated(now);
-
+        // 3) сохраняем комментарий (через маппер)
+        Comment comment = CommentMapper.toEntityFromCreate(dto, item, author, now);
         Comment saved = commentRepository.save(comment);
 
         // 4) маппинг в DTO ответа
-        return new CommentDto(
-                saved.getId(),
-                saved.getText(),
-                saved.getAuthor().getName(),
-                saved.getCreated()
-        );
+        return CommentMapper.toDto(saved);
+    }
+
+    // утилита: переводим from/size в Pageable (offset → page)
+    private Pageable pageOf(int from, int size) {
+        if (from < 0 || size <= 0) {
+            throw new ValidationException("Invalid pagination params: from=" + from + ", size=" + size);
+        }
+        return PageRequest.of(from / size, size);
     }
 }

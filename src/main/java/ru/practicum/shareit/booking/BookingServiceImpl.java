@@ -10,6 +10,7 @@ import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.BookingStatus;
+import ru.practicum.shareit.error.ConflictException;
 import ru.practicum.shareit.error.ForbiddenException;
 import ru.practicum.shareit.error.NotFoundException;
 import ru.practicum.shareit.error.ValidationException;
@@ -20,7 +21,6 @@ import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -30,10 +30,6 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
-
-    private Pageable pageOf(int from, int size) {
-        return PageRequest.of(from / size, size);
-    }
 
     @Override
     @Transactional
@@ -54,9 +50,9 @@ public class BookingServiceImpl implements BookingService {
             throw new NotFoundException("Owner cannot book own item");
         }
 
-        if (bookingRepository.existsApprovedOverlap(
-                item.getId(), dto.getStart(), dto.getEnd())) {
-            throw new ValidationException("Booking time overlaps with existing booking");
+        // специальное исключение: конфликт по времени
+        if (bookingRepository.existsApprovedOverlap(item.getId(), dto.getStart(), dto.getEnd())) {
+            throw new ConflictException("Booking time overlaps with existing booking");
         }
 
         Booking saved = bookingRepository.save(BookingMapper.toEntity(dto, item, booker));
@@ -89,7 +85,8 @@ public class BookingServiceImpl implements BookingService {
         Long bookerId = booking.getBooker().getId();
 
         if (!ownerId.equals(userId) && !bookerId.equals(userId)) {
-            throw new NotFoundException("Booking not found"); // по условию курса
+            // по условию курса
+            throw new NotFoundException("Booking not found");
         }
         return BookingMapper.toDto(booking);
     }
@@ -99,7 +96,13 @@ public class BookingServiceImpl implements BookingService {
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found: " + userId));
         Pageable pageable = pageOf(from, size);
         LocalDateTime now = LocalDateTime.now();
-        BookingState st = parseState(state);
+
+        final BookingState st;
+        try {
+            st = BookingState.from(state);
+        } catch (IllegalArgumentException ex) {
+            throw new ValidationException("Unknown state: " + state);
+        }
 
         return switch (st) {
             case ALL -> bookingRepository.findByBookerIdOrderByStartDesc(userId, pageable)
@@ -130,7 +133,13 @@ public class BookingServiceImpl implements BookingService {
         userRepository.findById(ownerId).orElseThrow(() -> new NotFoundException("User not found: " + ownerId));
         Pageable pageable = pageOf(from, size);
         LocalDateTime now = LocalDateTime.now();
-        BookingState st = parseState(state);
+
+        final BookingState st;
+        try {
+            st = BookingState.from(state);
+        } catch (IllegalArgumentException ex) {
+            throw new ValidationException("Unknown state: " + state);
+        }
 
         return switch (st) {
             case ALL -> bookingRepository.findByOwner(ownerId, pageable)
@@ -145,18 +154,16 @@ public class BookingServiceImpl implements BookingService {
                     .map(BookingMapper::toDto).getContent();
             case REJECTED -> bookingRepository.findOwnerByStatus(ownerId, BookingStatus.REJECTED, pageable)
                     .map(BookingMapper::toDto).getContent();
-            case CANCELED -> bookingRepository
-                    .findOwnerByStatus(ownerId, BookingStatus.CANCELED, pageable)
+            case CANCELED -> bookingRepository.findOwnerByStatus(ownerId, BookingStatus.CANCELED, pageable)
                     .map(BookingMapper::toDto).getContent();
         };
     }
 
-    private BookingState parseState(String state) {
-        if (state == null || state.isBlank()) return BookingState.ALL;
-        try {
-            return BookingState.valueOf(state.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            throw new ValidationException("Unknown state: " + state);
+    // приватные методы — ниже публичных (читабельность сверху-вниз)
+    private Pageable pageOf(int from, int size) {
+        if (from < 0 || size <= 0) {
+            throw new ValidationException("Invalid pagination params: from=" + from + ", size=" + size);
         }
+        return PageRequest.of(from / size, size);
     }
 }

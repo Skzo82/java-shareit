@@ -2,7 +2,6 @@ package ru.practicum.shareit.item;
 
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.item.dto.BookingShortDto;
-import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
@@ -12,8 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class ItemMapper {
-    private ItemMapper() {
-    }
+    private ItemMapper() { }
 
     public static ItemDto toDto(Item item) {
         if (item == null) return null;
@@ -30,33 +28,18 @@ public final class ItemMapper {
         ItemDto dto = toDto(item);
         dto.setLastBooking(toShort(last));
         dto.setNextBooking(toShort(next));
-        dto.setComments(toCommentDtoList(comments));
+        // комментарии маппим через CommentMapper
+        dto.setComments(CommentMapper.toDtoList(comments));
         return dto;
-    }
-
-    /* ===== Comment → CommentDto ===== */
-    public static CommentDto toCommentDto(Comment c) {
-        if (c == null) return null;
-        CommentDto dto = new CommentDto();
-        dto.setId(c.getId());
-        dto.setText(c.getText());
-        dto.setAuthorName(c.getAuthor() != null ? c.getAuthor().getName() : null);
-        dto.setCreated(c.getCreated());
-        return dto;
-    }
-
-    public static List<CommentDto> toCommentDtoList(List<Comment> list) {
-        if (list == null || list.isEmpty()) return new ArrayList<>();
-        List<CommentDto> out = new ArrayList<>(list.size());
-        for (Comment c : list) out.add(toCommentDto(c));
-        return out;
     }
 
     /* ===== Booking → BookingShortDto ===== */
     private static BookingShortDto toShort(Booking b) {
         if (b == null) return null;
-        return new BookingShortDto(b.getId(),
-                b.getBooker() != null ? b.getBooker().getId() : null);
+        return new BookingShortDto(
+                b.getId(),
+                b.getBooker() != null ? b.getBooker().getId() : null
+        );
     }
 
     /* ===== ItemDto + Owner → Item ===== */
