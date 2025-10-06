@@ -12,18 +12,13 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Map<String, String> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        var br = ex.getBindingResult();
-        String message = "Validation error";
-        if (br != null) {
-            var fe = br.getFieldError();
-            if (fe != null && fe.getDefaultMessage() != null) {
-                message = fe.getDefaultMessage();
-            }
-        }
+        var fieldError = ex.getBindingResult().getFieldError();
+        String message = (fieldError != null && fieldError.getDefaultMessage() != null)
+                ? fieldError.getDefaultMessage()
+                : "Validation error";
         return Map.of("error", message);
     }
 
