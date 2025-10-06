@@ -23,9 +23,9 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleMethodArgumentNotValid_shouldReturnMessageFromFieldError() throws NoSuchMethodException {
         class Dummy {
-            public void m(@jakarta.validation.Valid ItemDto dto) {
-            }
+            public void m(@jakarta.validation.Valid ItemDto dto) { }
         }
+
         Method method = Dummy.class.getDeclaredMethod("m", ItemDto.class);
         MethodParameter mp = new MethodParameter(method, 0);
 
