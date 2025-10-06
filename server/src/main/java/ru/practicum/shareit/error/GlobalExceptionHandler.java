@@ -16,10 +16,14 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Map<String, String> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        var fe = ex.getBindingResult().getFieldError();
-        String message = (fe != null && fe.getDefaultMessage() != null)
-                ? fe.getDefaultMessage()
-                : "Validation error";
+        var br = ex.getBindingResult();
+        String message = "Validation error";
+        if (br != null) {
+            var fe = br.getFieldError();
+            if (fe != null && fe.getDefaultMessage() != null) {
+                message = fe.getDefaultMessage();
+            }
+        }
         return Map.of("error", message);
     }
 

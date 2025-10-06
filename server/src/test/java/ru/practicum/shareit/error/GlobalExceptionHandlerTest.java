@@ -3,8 +3,13 @@ package ru.practicum.shareit.error;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.MethodParameter;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import ru.practicum.shareit.item.ItemDto;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Set;
 
@@ -16,12 +21,22 @@ class GlobalExceptionHandlerTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
-    void handleMethodArgumentNotValid_shouldReturnMessageFromFieldError() {
-        MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
+    void handleMethodArgumentNotValid_shouldReturnMessageFromFieldError() throws NoSuchMethodException {
+        class Dummy {
+            public void m(@jakarta.validation.Valid ItemDto dto) {
+            }
+        }
+        Method method = Dummy.class.getDeclaredMethod("m", ItemDto.class);
+        MethodParameter mp = new MethodParameter(method, 0);
+
+        ItemDto target = new ItemDto();
+        BeanPropertyBindingResult br = new BeanPropertyBindingResult(target, "itemDto");
+        br.addError(new FieldError("itemDto", "name", "Name is required"));
+
+        MethodArgumentNotValidException ex = new MethodArgumentNotValidException(mp, br);
 
         Map<String, String> body = handler.handleMethodArgumentNotValid(ex);
-        assertThat(body).containsKey("error");
-        assertThat(body.get("error")).isNotBlank(); // "Validation error" nel fallback
+        assertThat(body).containsEntry("error", "Name is required");
     }
 
     @Test

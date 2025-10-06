@@ -6,9 +6,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.beans.factory.annotation.Autowired;
+import ru.practicum.shareit.error.GlobalExceptionHandler;
 
 import java.util.List;
 
@@ -17,6 +19,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ItemController.class)
+@Import({
+        GlobalExceptionHandler.class,
+        org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration.class,
+        org.springframework.validation.beanvalidation.MethodValidationPostProcessor.class
+})
 class ItemControllerValidationTest {
 
     @Autowired
