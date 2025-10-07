@@ -8,7 +8,6 @@ COPY ./gateway/pom.xml ./gateway/pom.xml
 RUN mvn -q -e -U -DskipTests dependency:go-offline
 
 COPY . .
-
 RUN mvn -q -DskipTests -pl server -am package
 
 FROM eclipse-temurin:21-jre-alpine
@@ -19,6 +18,11 @@ RUN apk add --no-cache curl
 COPY --from=build /app/server/target/*.jar /app/app.jar
 
 ENV SERVER_PORT=9090
+ENV JAVA_OPTS=""
+
 EXPOSE 9090
 
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring
+
+ENTRYPOINT ["sh","-lc","exec java $JAVA_OPTS -jar /app/app.jar"]

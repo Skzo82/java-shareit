@@ -16,7 +16,7 @@ services:
   shareit-server:
     build:
       context: ./server
-      dockerfile: server/Dockerfile
+      dockerfile: Dockerfile
     container_name: shareit-server
     depends_on:
       - postgres
@@ -28,15 +28,15 @@ services:
     ports:
       - "9090:9090"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9090/actuator/health" ]
+      test: [ "CMD", "curl", "-sf", "http://localhost:9090/actuator/health" ]
       interval: 5s
       timeout: 3s
-      retries: 20
+      retries: 30
 
   shareit-gateway:
     build:
       context: ./gateway
-      dockerfile: gateway/Dockerfile
+      dockerfile: Dockerfile
     container_name: shareit-gateway
     depends_on:
       shareit-server:
