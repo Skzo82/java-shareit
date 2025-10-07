@@ -1,34 +1,35 @@
 package ru.practicum.shareit.request;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 import ru.practicum.shareit.client.BaseClient;
-
-import java.util.Map;
 
 @Component
 public class ItemRequestClient extends BaseClient {
 
-    private static final String API_PREFIX = "/requests"; // Базовый путь на сервере
+    private static final String API_PREFIX = "/requests";
 
-    public ItemRequestClient(RestTemplate restTemplate) {
-        super(restTemplate);
+    public ItemRequestClient(@Value("${shareit-server.url}") String serverUrl,
+                             RestTemplateBuilder builder) {
+        super(builder.build(), serverUrl);
     }
 
     public ResponseEntity<Object> createRequest(Long userId, ItemRequestCreateDto dto) {
-        return post(API_PREFIX, userId, dto); // POST /requests
+        return post(API_PREFIX, userId, dto);
     }
 
     public ResponseEntity<Object> getOwnRequests(Long userId) {
-        return get(API_PREFIX, userId); // GET /requests
+        return get(API_PREFIX, userId);
     }
 
-    public ResponseEntity<Object> getAllRequests(Long userId, Integer from, Integer size) {
-        return get(API_PREFIX + "/all", userId, Map.of("from", from, "size", size)); // GET /requests/all?from..&size..
+    public ResponseEntity<Object> getAllRequests(Long userId, int from, int size) {
+        String path = API_PREFIX + "/all?from=" + from + "&size=" + size;
+        return get(path, userId);
     }
 
     public ResponseEntity<Object> getRequestById(Long userId, Long requestId) {
-        return get(API_PREFIX + "/" + requestId, userId); // GET /requests/{id}
+        return get(API_PREFIX + "/" + requestId, userId);
     }
 }

@@ -22,43 +22,55 @@ public class ItemController {
     private final ItemClient client;
 
     @PostMapping
-    public ResponseEntity<Object> create(@RequestHeader(USER_HEADER) Long userId,
-                                         @Valid @RequestBody ItemCreateDto dto) {
+    public ResponseEntity<Object> create(
+            @RequestHeader(USER_HEADER) Long userId,
+            @Valid @RequestBody ItemCreateDto dto
+    ) {
         return client.create(userId, dto);
     }
 
     @GetMapping("/{itemId}")
-    public ResponseEntity<Object> getById(@RequestHeader(USER_HEADER) Long userId,
-                                          @PathVariable Long itemId) {
+    public ResponseEntity<Object> getById(
+            @RequestHeader(USER_HEADER) Long userId,
+            @PathVariable Long itemId
+    ) {
         return client.getById(userId, itemId);
     }
 
     @GetMapping
-    public ResponseEntity<Object> getOwnerItems(@RequestHeader(USER_HEADER) Long userId,
-                                                @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                                @RequestParam(defaultValue = "10") @Positive Integer size) {
+    public ResponseEntity<Object> getOwnerItems(
+            @RequestHeader(USER_HEADER) Long userId,
+            @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+            @RequestParam(defaultValue = "10") @Positive Integer size
+    ) {
         return client.getOwnerItems(userId, from, size);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Object> search(@RequestHeader(USER_HEADER) Long userId,
-                                         @RequestParam String text,
-                                         @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                         @RequestParam(defaultValue = "10") @Positive Integer size) {
+    public ResponseEntity<Object> search(
+            @RequestHeader(USER_HEADER) Long userId,
+            @RequestParam String text,
+            @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+            @RequestParam(defaultValue = "10") @Positive Integer size
+    ) {
         return client.search(userId, text, from, size);
     }
 
     @PatchMapping("/{itemId}")
-    public ResponseEntity<Object> update(@RequestHeader(USER_HEADER) Long userId,
-                                         @PathVariable Long itemId,
-                                         @Valid @RequestBody ItemUpdateDto dto) {
+    public ResponseEntity<Object> update(
+            @RequestHeader(USER_HEADER) Long userId,
+            @PathVariable Long itemId,
+            @Valid @RequestBody ItemUpdateDto dto
+    ) {
         return client.update(userId, itemId, dto);
     }
 
     @PostMapping("/{itemId}/comment")
-    public ResponseEntity<Object> addComment(@RequestHeader(USER_HEADER) Long userId,
-                                             @PathVariable Long itemId,
-                                             @Valid @RequestBody CommentCreateDto dto) {
+    public ResponseEntity<Object> addComment(
+            @RequestHeader(USER_HEADER) Long userId,
+            @PathVariable Long itemId,
+            @Valid @RequestBody CommentCreateDto dto
+    ) {
         return client.addComment(userId, itemId, dto);
     }
 }

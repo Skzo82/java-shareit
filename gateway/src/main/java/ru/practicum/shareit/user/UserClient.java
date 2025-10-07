@@ -1,53 +1,50 @@
 package ru.practicum.shareit.user;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.web.util.DefaultUriBuilderFactory;
+import org.springframework.stereotype.Component;
 import ru.practicum.shareit.client.BaseClient;
-import ru.practicum.shareit.user.dto.UserCreateDto;
-import ru.practicum.shareit.user.dto.UserUpdateDto;
 
-import java.util.Map;
-
-@Slf4j
-@Service
+@Component
 public class UserClient extends BaseClient {
 
     private static final String API_PREFIX = "/users";
 
     public UserClient(@Value("${shareit-server.url}") String serverUrl,
                       RestTemplateBuilder builder) {
-        super(
-                builder
-                        .uriTemplateHandler(new DefaultUriBuilderFactory(serverUrl + API_PREFIX))
-                        // ✅ исправлено: убрали неоднозначность
-                        .requestFactory(() -> new HttpComponentsClientHttpRequestFactory())
-                        .build()
-        );
+        super(builder.build(), serverUrl);
     }
 
-    public ResponseEntity<Object> create(UserCreateDto dto) {
-        return post("", null, dto);
+    // --- CREATE ---
+    public ResponseEntity<Object> create(Object dto) {
+        // Per gli endpoint user di solito non serve l'header X-Sharer-User-Id
+        return post(API_PREFIX, null, dto);
     }
 
-    public ResponseEntity<Object> update(long userId, UserUpdateDto dto) {
-        return patch("/" + userId, null, dto);
+    // --- READ ALL ---
+    public ResponseEntity<Object> getAll() {
+        return get(API_PREFIX, null);
     }
 
-    public ResponseEntity<Object> getById(long userId) {
-        return get("/" + userId, null);
-    }
-
+    // --- READ ALL ---
     public ResponseEntity<Object> getAll(int from, int size) {
-        Map<String, Object> params = Map.of("from", from, "size", size);
-        return get("?from={from}&size={size}", null, params);
+        String path = API_PREFIX + "?from=" + from + "&size=" + size;
+        return get(path, null);
     }
 
-    public ResponseEntity<Object> delete(long userId) {
-        return delete("/" + userId, null);
+    // --- READ BY ID ---
+    public ResponseEntity<Object> getById(Long userId) {
+        return get(API_PREFIX + "/" + userId, null);
+    }
+
+    // --- UPDATE ---
+    public ResponseEntity<Object> update(Long userId, Object dto) {
+        return patch(API_PREFIX + "/" + userId, null, dto);
+    }
+
+    // --- DELETE ---
+    public ResponseEntity<Object> delete(Long userId) {
+        return delete(API_PREFIX + "/" + userId, null);
     }
 }
