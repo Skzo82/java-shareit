@@ -275,7 +275,11 @@ class ItemControllerMoreTest {
     @DisplayName("PATCH /items/{id} — 400, если нет заголовка пользователя")
     void patch_missingHeader_400() throws Exception {
         String patchJson = """
-                    {"name":"Новое имя","description":"Обновлено","available":true}
+                {
+                  "name": "Новое имя",
+                  "description": "Обновлено",
+                  "available": true
+                }
                 """;
         mockMvc.perform(patch("/items/12")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -287,7 +291,11 @@ class ItemControllerMoreTest {
     @DisplayName("PATCH /items/{id} — 200, частичное обновление проксируется")
     void patch_ok_forwarded() throws Exception {
         String patchJson = """
-                    {"name":"Новое имя","description":"Обновлено","available":true}
+                {
+                    "name":"Новое имя",
+                    "description":"Обновлено",
+                    "available":true
+                }
                 """;
 
         // предполагаем метод client.update(userId, itemId, body)
