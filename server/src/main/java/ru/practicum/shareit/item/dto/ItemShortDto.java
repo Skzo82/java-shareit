@@ -10,6 +10,8 @@ import lombok.*;
 public class ItemShortDto {
     private Long id;
     private String name;
-    private Long requestId;
+    private String description;
+    private Boolean available;
     private Long ownerId;
+    private Long requestId;
 }

@@ -1,8 +1,12 @@
 package ru.practicum.shareit.request.dto;
 
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ItemRequestCreateDto {
 
     private String description;

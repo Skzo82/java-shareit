@@ -2,16 +2,14 @@ package ru.practicum.shareit.item;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ItemDto {
     private Long id;
 
@@ -26,6 +24,8 @@ public class ItemDto {
 
     private BookingShortDto lastBooking;
     private BookingShortDto nextBooking;
+
+    @Builder.Default
     private List<CommentDto> comments = new ArrayList<>();
 
     private Long requestId;
