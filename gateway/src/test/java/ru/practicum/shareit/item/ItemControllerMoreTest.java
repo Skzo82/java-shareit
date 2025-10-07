@@ -270,7 +270,6 @@ class ItemControllerMoreTest {
     }
 
     // ---------- PATCH (обновление) ----------
-
     @Test
     @DisplayName("PATCH /items/{id} — 400, если нет заголовка пользователя")
     void patch_missingHeader_400() throws Exception {
@@ -295,11 +294,14 @@ class ItemControllerMoreTest {
                 "available", true
         ));
 
-        Mockito.when(client.update(eq(1L), eq(12L), any()))
-                .thenReturn(ResponseEntity.ok(Map.of(
-                        "id", 12,
-                        "name", "Новое имя"
-                )));
+        Mockito.when(client.update(
+                eq(1L),
+                eq(12L),
+                Mockito.any(ru.practicum.shareit.item.dto.ItemUpdateDto.class)
+        )).thenReturn(ResponseEntity.ok(Map.of(
+                "id", 12,
+                "name", "Новое имя"
+        )));
 
         mockMvc.perform(patch("/items/12")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -309,3 +311,4 @@ class ItemControllerMoreTest {
                 .andExpect(jsonPath("$.id", is(12)))
                 .andExpect(jsonPath("$.name", is("Новое имя")));
     }
+}
