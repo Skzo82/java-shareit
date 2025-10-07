@@ -1,5 +1,6 @@
 package ru.practicum.shareit.item.dto;
 
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Getter
@@ -8,9 +9,14 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ItemUpdateDto {
-    // Все поля опциональные для PATCH
+
+    @Size(max = 255, message = "name: максимум 255 символов")
     private String name;
+
+    @Size(max = 1000, message = "description: максимум 1000 символов")
     private String description;
+
     private Boolean available;
-    private Long requestId; // можно изменить/сбросить привязку (если бизнес-логика позволяет)
+
+    private Long requestId;
 }
