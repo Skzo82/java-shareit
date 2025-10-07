@@ -274,13 +274,12 @@ class ItemControllerMoreTest {
     @Test
     @DisplayName("PATCH /items/{id} — 400, если нет заголовка пользователя")
     void patch_missingHeader_400() throws Exception {
-        String patchJson = """
-                {
-                  "name": "Новое имя",
-                  "description": "Обновлено",
-                  "available": true
-                }
-                """;
+        String patchJson = mapper.writeValueAsString(Map.of(
+                "name", "Новое имя",
+                "description", "Обновлено",
+                "available", true
+        ));
+
         mockMvc.perform(patch("/items/12")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(patchJson))
@@ -290,24 +289,23 @@ class ItemControllerMoreTest {
     @Test
     @DisplayName("PATCH /items/{id} — 200, частичное обновление проксируется")
     void patch_ok_forwarded() throws Exception {
-        String patchJson = """
-                {
-                    "name":"Новое имя",
-                    "description":"Обновлено",
-                    "available":true
-                }
-                """;
+        String patchJson = mapper.writeValueAsString(Map.of(
+                "name", "Новое имя",
+                "description", "Обновлено",
+                "available", true
+        ));
 
-        // предполагаем метод client.update(userId, itemId, body)
-        Mockito.when(client.update(eq(6L), eq(12L), any()))
-                .thenReturn(ResponseEntity.ok(Map.of("id", 12, "name", "Новое имя")));
+        Mockito.when(client.update(eq(1L), eq(12L), any()))
+                .thenReturn(ResponseEntity.ok(Map.of(
+                        "id", 12,
+                        "name", "Новое имя"
+                )));
 
         mockMvc.perform(patch("/items/12")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(USER_HEADER, 6)
+                        .header("X-Sharer-User-Id", 1)
                         .content(patchJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(12)))
                 .andExpect(jsonPath("$.name", is("Новое имя")));
     }
-}
