@@ -1,48 +1,91 @@
 package ru.practicum.shareit.booking;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
-import ru.practicum.shareit.client.BaseClient;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import ru.practicum.shareit.booking.dto.BookItemRequestDto;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 @Component
-public class BookingClient extends BaseClient {
+@RequiredArgsConstructor
+public class BookingClient {
 
-    private static final String API_PREFIX = "/bookings";
+    private static final String USER_HEADER = "X-Sharer-User-Id";
+    private static final List<String> HOP_BY_HOP = List.of(
+            "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
+            "te", "trailer", "transfer-encoding", "upgrade", "content-length"
+    );
+    private final RestTemplate restTemplate;
+    @Value("${shareit.server.url:http://shareit-server:9090}")
+    private String serverUrl;
 
-    public BookingClient(@Value("${shareit-server.url}") String serverUrl,
-                         RestTemplateBuilder builder) {
-        super(builder.build(), serverUrl);
+    public ResponseEntity<Object> create(Long userId, BookItemRequestDto dto) {
+        return forward(HttpMethod.POST, "/bookings", userId, dto, null);
     }
 
-    // CREATE
-    public ResponseEntity<Object> create(Long userId, Object dto) {
-        return post(API_PREFIX, userId, dto);
-    }
-
-    // APPROVE / REJECT
     public ResponseEntity<Object> approve(Long userId, Long bookingId, boolean approved) {
-        String path = API_PREFIX + "/" + bookingId + "?approved=" + approved;
-        return patch(path, userId, null);
+        String path = "/bookings/" + bookingId + "?approved=" + approved;
+        return forward(HttpMethod.PATCH, path, userId, null, null);
     }
 
-    // GET BY ID
     public ResponseEntity<Object> getById(Long userId, Long bookingId) {
-        return get(API_PREFIX + "/" + bookingId, userId);
+        String path = "/bookings/" + bookingId;
+        return forward(HttpMethod.GET, path, userId, null, null);
     }
 
     public ResponseEntity<Object> getAllByUser(Long userId, String state, int from, int size) {
-        String path = API_PREFIX + "?state=" + state + "&from=" + from + "&size=" + size;
-        return get(path, userId);
+        String path = "/bookings?state=" + state + "&from=" + from + "&size=" + size;
+        return forward(HttpMethod.GET, path, userId, null, null);
     }
 
     public ResponseEntity<Object> getAllByOwner(Long userId, String state, int from, int size) {
-        String path = API_PREFIX + "/owner?state=" + state + "&from=" + from + "&size=" + size;
-        return get(path, userId);
+        String path = "/bookings/owner?state=" + state + "&from=" + from + "&size=" + size;
+        return forward(HttpMethod.GET, path, userId, null, null);
     }
 
-    public ResponseEntity<Object> getAllByBooker(Long userId, String state, int from, int size) {
-        return getAllByUser(userId, state, from, size);
+    private ResponseEntity<Object> forward(HttpMethod method,
+                                           String pathWithQuery,
+                                           Long userId,
+                                           Object body,
+                                           Map<String, String> extraHeaders) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.set(USER_HEADER, String.valueOf(userId));
+        if (extraHeaders != null) extraHeaders.forEach(headers::set);
+        HttpEntity<?> entity = (body == null) ? new HttpEntity<>(headers) : new HttpEntity<>(body, headers);
+
+        ResponseEntity<byte[]> down = restTemplate.exchange(
+                URI.create(serverUrl + pathWithQuery),
+                method,
+                entity,
+                byte[].class
+        );
+
+        HttpHeaders outHeaders = new HttpHeaders(new LinkedMultiValueMap<>());
+        down.getHeaders().forEach((k, v) -> {
+            String key = k == null ? "" : k.toLowerCase();
+            if (!HOP_BY_HOP.contains(key)) {
+                outHeaders.put(k, v);
+            }
+        });
+
+        MediaType mt = down.getHeaders().getContentType();
+        if (mt == null) {
+            outHeaders.setContentType(MediaType.APPLICATION_JSON);
+        }
+
+        return new ResponseEntity<>(decodeBody(down), outHeaders, down.getStatusCode());
+    }
+
+    private Object decodeBody(ResponseEntity<byte[]> down) {
+        byte[] body = down.getBody();
+        if (body == null || body.length == 0) return null;
+        return new String(body);
     }
 }

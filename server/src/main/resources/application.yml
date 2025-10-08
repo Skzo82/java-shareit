@@ -1,6 +1,11 @@
 server:
   port: ${SERVER_PORT:9090}
   address: 0.0.0.0
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
 
 spring:
   datasource:
@@ -8,16 +13,35 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 1
+      connection-timeout: 30000
+      validation-timeout: 5000
+
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
-    open-in-view: false
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        jdbc.time_zone: UTC
+
   jackson:
     serialization:
       write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  mvc:
+    problemdetails:
+      enabled: false
+
+  sql:
+    init:
+      mode: never
 
 management:
   endpoints:
@@ -29,8 +53,6 @@ management:
       probes:
         enabled: true
       show-details: always
-  server:
-    port: ${SERVER_PORT:9090}
 
 logging:
   level:
@@ -51,6 +73,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  mvc:
+    problemdetails:
+      enabled: false
 management:
   endpoints:
     web:
