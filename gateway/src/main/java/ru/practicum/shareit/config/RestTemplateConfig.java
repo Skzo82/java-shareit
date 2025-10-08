@@ -16,7 +16,7 @@ public class RestTemplateConfig {
 
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder,
-                                     @Value("${shareit-server.url:http://localhost:9090}") String serverUrl) {
+                                     @Value("${shareit.server.url:http://localhost:9090}") String serverUrl) {
         return builder
                 .rootUri(serverUrl)
                 .setConnectTimeout(Duration.ofSeconds(5))
