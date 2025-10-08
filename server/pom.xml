@@ -1,7 +1,6 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -14,8 +13,8 @@
     <name>ShareIt Server</name>
 
     <properties>
-        <jacoco.skip>true</jacoco.skip>
         <maven.compiler.release>21</maven.compiler.release>
+        <jacoco.skip>false</jacoco.skip>
     </properties>
 
     <dependencies>
@@ -90,13 +89,6 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
-                    </execution>
-                    <execution>
-                        <id>jacoco-check</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
                         <configuration>
                             <skip>${jacoco.skip}</skip>
                         </configuration>
@@ -110,7 +102,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <!-- usato da jacoco:prepare-agent -->
+                    <!-- argLine viene popolato da jacoco:prepare-agent -->
                     <argLine>${argLine}</argLine>
                     <systemPropertyVariables>
                         <spring.profiles.active>test</spring.profiles.active>
@@ -146,9 +138,6 @@
     <profiles>
         <profile>
             <id>with-jacoco-check</id>
-            <properties>
-                <jacoco.skip>false</jacoco.skip>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -157,6 +146,7 @@
                         <executions>
                             <execution>
                                 <id>jacoco-check</id>
+                                <phase>verify</phase>
                                 <goals>
                                     <goal>check</goal>
                                 </goals>
