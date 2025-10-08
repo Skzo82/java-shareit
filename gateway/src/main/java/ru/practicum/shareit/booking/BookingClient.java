@@ -26,7 +26,7 @@ public class BookingClient {
     private final RestTemplate restTemplate;
 
     // <<<<<< FIX property key + default locale
-    @Value("${shareit.server-url:http://localhost:9090}")
+    @Value("${shareit.server.url:http://localhost:9090}")
     private String serverUrl;
 
     public ResponseEntity<Object> create(Long userId, BookItemRequestDto dto) {
