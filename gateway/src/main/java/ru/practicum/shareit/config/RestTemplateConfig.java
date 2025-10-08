@@ -11,12 +11,11 @@ import java.time.Duration;
 @Configuration
 public class RestTemplateConfig {
 
-    // Создаём бин RestTemplate с базовым адресом на сервер
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder,
-                                     @Value("${shareit-server.url}") String serverUrl) {
+                                     @Value("${shareit.server.url:http://localhost:9090}") String serverUrl) {
         return builder
-                .rootUri(serverUrl)                 // http://localhost:9090
+                .rootUri(serverUrl)
                 .setConnectTimeout(Duration.ofSeconds(5))
                 .setReadTimeout(Duration.ofSeconds(30))
                 .build();
