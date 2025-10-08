@@ -1,70 +1,80 @@
 package ru.practicum.shareit.client;
 
 import org.springframework.http.*;
-import org.springframework.lang.Nullable;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Map;
+import java.util.Set;
 
 public class BaseClient {
 
-    private static final String USER_HEADER = "X-Sharer-User-Id";
+    private static final Set<String> HOP_BY_HOP = Set.of(
+            "transfer-encoding", "content-length", "connection",
+            "keep-alive", "proxy-connection", "te", "trailer", "upgrade"
+    );
+    private final RestTemplate restTemplate;
+    private final String serverUrl;
 
-    private final RestTemplate rest;
-    private final String baseUrl;
-
-    public BaseClient(RestTemplate rest, String baseUrl) {
-        this.rest = rest;
-        this.baseUrl = baseUrl != null && baseUrl.endsWith("/")
-                ? baseUrl.substring(0, baseUrl.length() - 1)
-                : baseUrl;
+    public BaseClient(RestTemplate restTemplate, String serverUrl) {
+        this.restTemplate = restTemplate;
+        this.serverUrl = serverUrl;
     }
 
-    // --- GET ---
     protected ResponseEntity<Object> get(String path, Long userId) {
-        return exchange(HttpMethod.GET, path, userId, null);
+        ResponseEntity<Object> down = exchange(HttpMethod.GET, path, userId, null, null);
+        return forward(down);
     }
 
-    // --- POST ---
-    protected ResponseEntity<Object> post(String path, Long userId, @Nullable Object body) {
-        return exchange(HttpMethod.POST, path, userId, body);
+    protected ResponseEntity<Object> get(String path, Long userId, Map<String, Object> uriParams) {
+        ResponseEntity<Object> down = exchange(HttpMethod.GET, path, userId, null, uriParams);
+        return forward(down);
     }
 
-    // --- PATCH ---
-    protected ResponseEntity<Object> patch(String path, Long userId, @Nullable Object body) {
-        return exchange(HttpMethod.PATCH, path, userId, body);
+    protected ResponseEntity<Object> post(String path, Long userId, Object body) {
+        ResponseEntity<Object> down = exchange(HttpMethod.POST, path, userId, body, null);
+        return forward(down);
     }
 
-    // --- DELETE ---
+    protected ResponseEntity<Object> patch(String path, Long userId, Object body) {
+        ResponseEntity<Object> down = exchange(HttpMethod.PATCH, path, userId, body, null);
+        return forward(down);
+    }
+
     protected ResponseEntity<Object> delete(String path, Long userId) {
-        return exchange(HttpMethod.DELETE, path, userId, null);
+        ResponseEntity<Object> down = exchange(HttpMethod.DELETE, path, userId, null, null);
+        return forward(down);
     }
 
-    private ResponseEntity<Object> exchange(HttpMethod method,
-                                            String path,
-                                            Long userId,
-                                            @Nullable Object body) {
+    // --- low level ---
+
+    private ResponseEntity<Object> exchange(
+            HttpMethod method, String path, Long userId, Object body, Map<String, Object> uriParams) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         if (userId != null) {
-            headers.add(USER_HEADER, String.valueOf(userId));
+            headers.add("X-Sharer-User-Id", String.valueOf(userId));
         }
 
-        HttpEntity<Object> requestEntity = new HttpEntity<>(body, headers);
+        HttpEntity<Object> entity = (body == null) ? new HttpEntity<>(headers) : new HttpEntity<>(body, headers);
+        String url = serverUrl + path;
 
-        String normalizedPath = (path == null) ? "" : path.trim();
-        if (!normalizedPath.startsWith("/")) {
-            normalizedPath = "/" + normalizedPath;
+        if (uriParams == null || uriParams.isEmpty()) {
+            return restTemplate.exchange(url, method, entity, Object.class);
+        } else {
+            return restTemplate.exchange(url, method, entity, Object.class, uriParams);
         }
-        String absoluteUrl = baseUrl + normalizedPath;
+    }
 
-        try {
-            return rest.exchange(absoluteUrl, method, requestEntity, Object.class);
-        } catch (HttpStatusCodeException e) {
-            return ResponseEntity
-                    .status(e.getStatusCode())
-                    .headers(e.getResponseHeaders() != null ? e.getResponseHeaders() : new HttpHeaders())
-                    .body(e.getResponseBodyAsByteArray());
-        }
+    protected ResponseEntity<Object> forward(ResponseEntity<?> down) {
+        HttpHeaders filtered = new HttpHeaders();
+        down.getHeaders().forEach((k, v) -> {
+            if (!HOP_BY_HOP.contains(k.toLowerCase())) {
+                filtered.put(k, v);
+            }
+        });
+        return ResponseEntity.status(down.getStatusCode())
+                .headers(filtered)
+                .body(down.getBody());
     }
 }
