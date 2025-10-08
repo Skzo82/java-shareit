@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 import ru.practicum.shareit.booking.dto.BookItemRequestDto;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -21,8 +22,11 @@ public class BookingClient {
             "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
             "te", "trailer", "transfer-encoding", "upgrade", "content-length"
     );
+
     private final RestTemplate restTemplate;
-    @Value("${shareit.server.url:http://shareit-server:9090}")
+
+    // <<<<<< FIX property key + default locale
+    @Value("${shareit.server-url:http://localhost:9090}")
     private String serverUrl;
 
     public ResponseEntity<Object> create(Long userId, BookItemRequestDto dto) {
@@ -54,10 +58,15 @@ public class BookingClient {
                                            Long userId,
                                            Object body,
                                            Map<String, String> extraHeaders) {
+
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.set(USER_HEADER, String.valueOf(userId));
+        if (body != null) {
+            headers.setContentType(MediaType.APPLICATION_JSON);
+        }
         if (extraHeaders != null) extraHeaders.forEach(headers::set);
+
         HttpEntity<?> entity = (body == null) ? new HttpEntity<>(headers) : new HttpEntity<>(body, headers);
 
         ResponseEntity<byte[]> down = restTemplate.exchange(
@@ -69,23 +78,24 @@ public class BookingClient {
 
         HttpHeaders outHeaders = new HttpHeaders(new LinkedMultiValueMap<>());
         down.getHeaders().forEach((k, v) -> {
-            String key = k == null ? "" : k.toLowerCase();
-            if (!HOP_BY_HOP.contains(key)) {
+            String keyLower = k == null ? "" : k.toLowerCase();
+            if (!HOP_BY_HOP.contains(keyLower)) {
                 outHeaders.put(k, v);
             }
         });
 
-        MediaType mt = down.getHeaders().getContentType();
-        if (mt == null) {
+        if (down.getHeaders().getContentType() == null) {
             outHeaders.setContentType(MediaType.APPLICATION_JSON);
         }
 
         return new ResponseEntity<>(decodeBody(down), outHeaders, down.getStatusCode());
     }
 
-    private Object decodeBody(ResponseEntity<byte[]> down) {
-        byte[] body = down.getBody();
-        if (body == null || body.length == 0) return null;
-        return new String(body);
+    private String decodeBody(ResponseEntity<byte[]> response) {
+        byte[] bytes = response.getBody();
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 }
