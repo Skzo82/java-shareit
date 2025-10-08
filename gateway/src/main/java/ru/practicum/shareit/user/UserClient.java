@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import ru.practicum.shareit.client.BaseClient;
@@ -21,12 +22,13 @@ public class UserClient extends BaseClient {
         super(
                 builder
                         .rootUri(serverUrl)
+                        .requestFactory(settings -> new HttpComponentsClientHttpRequestFactory())
                         .setConnectTimeout(Duration.ofSeconds(5))
                         .setReadTimeout(Duration.ofSeconds(30))
                         .errorHandler(new DefaultResponseErrorHandler() {
                             @Override
                             public boolean hasError(ClientHttpResponse response) throws IOException {
-                                return false; // non sollevare eccezioni per 4xx/5xx
+                                return false;
                             }
                         })
                         .build(),

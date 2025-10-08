@@ -6,6 +6,11 @@ server:
       charset: UTF-8
       force: true
       enabled: true
+  http2:
+    enabled: false
+  compression:
+    enabled: false
+
 
 spring:
   datasource:
