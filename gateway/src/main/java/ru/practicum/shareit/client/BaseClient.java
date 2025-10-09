@@ -22,8 +22,6 @@ public class BaseClient {
         this.serverUrl = serverUrl;
     }
 
-    /* ------------ API helpers ------------ */
-
     protected ResponseEntity<Object> get(String path, Long userId) {
         return forward(exchange(HttpMethod.GET, path, userId, null, null));
     }
@@ -44,8 +42,6 @@ public class BaseClient {
         return forward(exchange(HttpMethod.DELETE, path, userId, null, null));
     }
 
-    /* ------------ Core ------------ */
-
     private ResponseEntity<Object> exchange(
             HttpMethod method, String path, Long userId, Object body, Map<String, Object> uriParams) {
 
@@ -55,10 +51,7 @@ public class BaseClient {
             headers.add("X-Sharer-User-Id", String.valueOf(userId));
         }
 
-        HttpEntity<Object> entity = (body == null)
-                ? new HttpEntity<>(headers)
-                : new HttpEntity<>(body, headers);
-
+        HttpEntity<Object> entity = (body == null) ? new HttpEntity<>(headers) : new HttpEntity<>(body, headers);
         String url = serverUrl + path;
 
         try {
@@ -86,8 +79,7 @@ public class BaseClient {
         if (!filtered.containsKey(HttpHeaders.CONTENT_TYPE)) {
             filtered.setContentType(MediaType.APPLICATION_JSON);
         }
-        return ResponseEntity
-                .status(down.getStatusCode())
+        return ResponseEntity.status(down.getStatusCode())
                 .headers(filtered)
                 .body(down.getBody());
     }

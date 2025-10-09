@@ -25,19 +25,20 @@ public class BookingClient extends BaseClient {
     @Autowired
     public BookingClient(@Value("${shareit.server.url}") String serverUrl,
                          RestTemplateBuilder builder) {
-        super(builder
-                        .rootUri(serverUrl)
-                        .requestFactory(cfg -> new HttpComponentsClientHttpRequestFactory())
-                        .setConnectTimeout(Duration.ofSeconds(5))
-                        .setReadTimeout(Duration.ofSeconds(30))
+        super(
+                builder
                         .errorHandler(new DefaultResponseErrorHandler() {
                             @Override
                             public boolean hasError(ClientHttpResponse response) throws IOException {
                                 return false;
                             }
                         })
+                        .requestFactory(settings -> new HttpComponentsClientHttpRequestFactory())
+                        .setConnectTimeout(Duration.ofSeconds(5))
+                        .setReadTimeout(Duration.ofSeconds(30))
                         .build(),
-                serverUrl);
+                serverUrl
+        );
     }
 
     public BookingClient(RestTemplate restTemplate) {
