@@ -1,21 +1,24 @@
 package ru.practicum.shareit.error;
 
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
 public class ApiErrorHandler {
 
@@ -25,8 +28,12 @@ public class ApiErrorHandler {
         return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(m);
     }
 
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Map<String, String>> handleMissingHeader(MissingRequestHeaderException ex) {
+        return body(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<Map<String, String>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
         var fe = ex.getBindingResult().getFieldError();
         String msg = (fe != null && fe.getDefaultMessage() != null) ? fe.getDefaultMessage() : "Validation failed";
@@ -34,7 +41,6 @@ public class ApiErrorHandler {
     }
 
     @ExceptionHandler(BindException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<Map<String, String>> handleBind(BindException ex) {
         var fe = ex.getFieldError();
         String msg = (fe != null && fe.getDefaultMessage() != null) ? fe.getDefaultMessage() : "Validation failed";
@@ -42,7 +48,6 @@ public class ApiErrorHandler {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<Map<String, String>> handleConstraint(ConstraintViolationException ex) {
         String msg = ex.getConstraintViolations().stream()
                 .findFirst()
@@ -57,13 +62,11 @@ public class ApiErrorHandler {
             HttpMessageNotReadableException.class,
             IllegalArgumentException.class
     })
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<Map<String, String>> handleBadRequest(Exception ex) {
         return body(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<Map<String, String>> handleOther(Exception ex) {
         return body(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
     }

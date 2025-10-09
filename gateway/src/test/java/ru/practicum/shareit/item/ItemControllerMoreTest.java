@@ -17,8 +17,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -105,7 +105,7 @@ class ItemControllerMoreTest {
                 .requestId(7L)
                 .build();
 
-        Mockito.when(client.create(eq(10L), any(ItemCreateDto.class)))
+        when(client.create(eq(10L), any(ItemCreateDto.class)))
                 .thenReturn(ResponseEntity.ok(Map.of("id", 100, "name", "Дрель", "requestId", 7)));
 
         mockMvc.perform(post("/items")
@@ -131,7 +131,7 @@ class ItemControllerMoreTest {
     @DisplayName("GET /items/{id} — 200, проксирование в client")
     void getById_ok_forwarded() throws Exception {
         // предполагаем метод client.getById(userId, itemId)
-        Mockito.when(client.getById(1L, 5L))
+        when(client.getById(1L, 5L))
                 .thenReturn(ResponseEntity.ok(Map.of("id", 5, "name", "Что-то")));
 
         mockMvc.perform(get("/items/5")
@@ -171,7 +171,7 @@ class ItemControllerMoreTest {
     @DisplayName("GET /items — 200, корректная пагинация проксируется")
     void getOwnerItems_ok_forwarded() throws Exception {
         // предполагаем метод client.getAll(userId, from, size)
-        Mockito.when(client.getAll(2L, 0, 5))
+        when(client.getOwnerItems(eq(2L), anyInt(), anyInt()))
                 .thenReturn(ResponseEntity.ok(new Object[]{}));
 
         mockMvc.perform(get("/items")
@@ -215,7 +215,7 @@ class ItemControllerMoreTest {
     @DisplayName("GET /items/search — 200, корректный запрос проксируется")
     void search_ok_forwarded() throws Exception {
         // предполагаем метод client.search(userId, text, from, size)
-        Mockito.when(client.search(3L, "дрель", 0, 10))
+        when(client.search(3L, "дрель", 0, 10))
                 .thenReturn(ResponseEntity.ok(new Object[]{}));
 
         mockMvc.perform(get("/items/search")
@@ -255,7 +255,7 @@ class ItemControllerMoreTest {
     @DisplayName("POST /items/{id}/comment — 200, corretto inoltro al client")
     void addComment_ok_forwarded() throws Exception {
         // arrange
-        Mockito.when(client.addComment(eq(4L), eq(9L), any(CommentCreateDto.class)))
+        when(client.addComment(eq(4L), eq(9L), any(CommentCreateDto.class)))
                 .thenReturn(ResponseEntity.ok(Map.of("id", 77, "text", "Отлично!")));
 
         // act + assert
@@ -294,7 +294,7 @@ class ItemControllerMoreTest {
                 "available", true
         ));
 
-        Mockito.when(client.update(
+        when(client.update(
                 eq(1L),
                 eq(12L),
                 Mockito.any(ru.practicum.shareit.item.dto.ItemUpdateDto.class)

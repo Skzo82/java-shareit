@@ -2,10 +2,10 @@ package ru.practicum.shareit.item;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
@@ -20,24 +20,18 @@ class ItemClientTest {
 
     private ItemClient client;
     private MockRestServiceServer server;
+    private RestTemplate restTemplate;
 
     @BeforeEach
     void setUp() {
-        RestTemplate restTemplate = new RestTemplateBuilder().build();
-        // “iniettiamo” il RestTemplate in BaseClient tramite sottoclasse di test
-        client = new ItemClient("http://localhost:9090", new RestTemplateBuilder()) {
-            // esponi il RestTemplate interno se necessario, oppure crea un costruttore ad hoc
-        };
-        // Hack semplice: riflessione per sostituire il RestTemplate privato in BaseClient
-        try {
-            var f = ru.practicum.shareit.client.BaseClient.class.getDeclaredField("rest");
-            f.setAccessible(true);
-            f.set(client, restTemplate);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        restTemplate = new RestTemplate();
         server = MockRestServiceServer.createServer(restTemplate);
+
+        client = new ItemClient(restTemplate);
+
+        ReflectionTestUtils.setField(client, "serverUrl", "http://localhost:9090");
     }
+
 
     @Test
     void create_ok() {

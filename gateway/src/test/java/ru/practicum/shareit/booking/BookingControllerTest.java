@@ -10,6 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.shareit.booking.dto.BookingRequestDto;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -22,9 +23,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Тесты BookingController (gateway): проверяем валидацию и что запросы проксируются в BookingClient.
- */
 @WebMvcTest(controllers = BookingController.class)
 class BookingControllerTest {
 
@@ -44,13 +42,13 @@ class BookingControllerTest {
         LocalDateTime start = LocalDateTime.now().plusDays(1);
         LocalDateTime end = LocalDateTime.now().plusDays(2);
 
-        BookItemRequestDto dto = BookItemRequestDto.builder()
+        BookingRequestDto dto = BookingRequestDto.builder()
                 .itemId(5L)
                 .start(start)
                 .end(end)
                 .build();
 
-        Mockito.when(client.create(eq(1L), any(BookItemRequestDto.class)))
+        Mockito.when(client.create(eq(1L), any(BookingRequestDto.class)))
                 .thenReturn(ResponseEntity.ok(Map.of("id", 101, "itemId", 5)));
 
         mockMvc.perform(post("/bookings")
@@ -66,7 +64,7 @@ class BookingControllerTest {
     @Test
     @DisplayName("POST /bookings — 400: отсутствует X-Sharer-User-Id")
     void create_missingHeader_400() throws Exception {
-        BookItemRequestDto dto = BookItemRequestDto.builder()
+        BookingRequestDto dto = BookingRequestDto.builder()
                 .itemId(5L)
                 .start(LocalDateTime.now().plusDays(1))
                 .end(LocalDateTime.now().plusDays(2))
@@ -81,7 +79,7 @@ class BookingControllerTest {
     @Test
     @DisplayName("POST /bookings — 400: отсутствуют start/end")
     void create_invalidDates_400() throws Exception {
-        BookItemRequestDto dto = BookItemRequestDto.builder()
+        BookingRequestDto dto = BookingRequestDto.builder()
                 .itemId(5L)
                 .start(null)
                 .end(null)
