@@ -9,7 +9,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CommentCreateDto {
-
     @NotBlank(message = "text не должен быть пустым")
     private String text;
 }

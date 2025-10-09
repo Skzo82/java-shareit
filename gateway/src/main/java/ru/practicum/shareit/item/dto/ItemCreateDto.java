@@ -10,18 +10,14 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ItemCreateDto {
-    // Название вещи
     @NotBlank(message = "name must not be blank")
     private String name;
 
-    // Описание
     @NotBlank(message = "description must not be blank")
     private String description;
 
-    // Доступность (обязательна)
     @NotNull(message = "available must not be null")
     private Boolean available;
 
-    // Опциональная привязка к запросу
     private Long requestId;
 }

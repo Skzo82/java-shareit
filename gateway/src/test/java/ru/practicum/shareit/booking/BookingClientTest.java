@@ -6,7 +6,6 @@ import org.springframework.http.*;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
-import ru.practicum.shareit.booking.dto.BookItemRequestDto;
 
 import java.net.URI;
 

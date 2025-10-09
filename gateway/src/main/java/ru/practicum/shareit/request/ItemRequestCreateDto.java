@@ -9,8 +9,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ItemRequestCreateDto {
-
-    // Текст запроса на вещь
     @NotBlank(message = "Описание запроса не должно быть пустым")
     private String description;
 }

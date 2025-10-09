@@ -1,16 +1,10 @@
 package ru.practicum.shareit.user;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.DefaultResponseErrorHandler;
+import org.springframework.web.client.RestTemplate;
 import ru.practicum.shareit.client.BaseClient;
-
-import java.io.IOException;
-import java.time.Duration;
 
 @Component
 public class UserClient extends BaseClient {
@@ -18,22 +12,8 @@ public class UserClient extends BaseClient {
     private static final String API_PREFIX = "/users";
 
     public UserClient(@Value("${shareit.server.url}") String serverUrl,
-                      RestTemplateBuilder builder) {
-        super(
-                builder
-                        .rootUri(serverUrl)
-                        .requestFactory(settings -> new HttpComponentsClientHttpRequestFactory())
-                        .setConnectTimeout(Duration.ofSeconds(5))
-                        .setReadTimeout(Duration.ofSeconds(30))
-                        .errorHandler(new DefaultResponseErrorHandler() {
-                            @Override
-                            public boolean hasError(ClientHttpResponse response) throws IOException {
-                                return false;
-                            }
-                        })
-                        .build(),
-                serverUrl
-        );
+                      RestTemplate restTemplate) {
+        super(restTemplate, serverUrl);
     }
 
     public ResponseEntity<Object> create(Object dto) {

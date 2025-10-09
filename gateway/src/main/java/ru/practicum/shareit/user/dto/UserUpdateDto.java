@@ -10,7 +10,6 @@ import lombok.*;
 @Builder
 public class UserUpdateDto {
 
-    // Разрешаем пустое значение (означает "не обновлять").
     private String name;
 
     @Email(message = "Некорректный формат email")

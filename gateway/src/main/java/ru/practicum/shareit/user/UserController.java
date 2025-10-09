@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.user.dto.UserCreateDto;
 import ru.practicum.shareit.user.dto.UserUpdateDto;
 
-
 @Slf4j
 @Validated
 @RestController
@@ -28,28 +27,27 @@ public class UserController {
     }
 
     @PatchMapping("/{userId}")
-    public ResponseEntity<Object> update(@PathVariable long userId,
+    public ResponseEntity<Object> update(@PathVariable @Positive long userId,
                                          @Valid @RequestBody UserUpdateDto dto) {
         log.debug("Обновление пользователя id={}: {}", userId, dto);
         return userClient.update(userId, dto);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<Object> getById(@PathVariable long userId) {
+    public ResponseEntity<Object> getById(@PathVariable @Positive long userId) {
         log.debug("Получение пользователя id={}", userId);
         return userClient.getById(userId);
     }
 
     @GetMapping
-    public ResponseEntity<Object> getAll(
-            @RequestParam(required = false, defaultValue = "0") @PositiveOrZero Integer from,
-            @RequestParam(required = false, defaultValue = "20") @Positive Integer size) {
+    public ResponseEntity<Object> getAll(@RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                         @RequestParam(defaultValue = "20") @Positive Integer size) {
         log.debug("Получение списка пользователей: from={}, size={}", from, size);
         return userClient.getAll(from, size);
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Object> delete(@PathVariable long userId) {
+    public ResponseEntity<Object> delete(@PathVariable @Positive long userId) {
         log.debug("Удаление пользователя id={}", userId);
         return userClient.delete(userId);
     }
