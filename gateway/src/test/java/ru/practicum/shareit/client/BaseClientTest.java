@@ -71,7 +71,6 @@ class BaseClientTest {
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getHeaders().containsKey("Connection")).isFalse();
-        // BaseClient forza JSON se assente
         assertThat(resp.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
         assertThat(resp.getBody()).isEqualTo("{}");
     }
