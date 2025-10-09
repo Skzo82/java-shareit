@@ -22,7 +22,7 @@ public class BaseClient {
         this.serverUrl = serverUrl;
     }
 
-    // ------------ API helper ------------
+    /* ------------ API helpers ------------ */
 
     protected ResponseEntity<Object> get(String path, Long userId) {
         return forward(exchange(HttpMethod.GET, path, userId, null, null));
@@ -44,7 +44,7 @@ public class BaseClient {
         return forward(exchange(HttpMethod.DELETE, path, userId, null, null));
     }
 
-    // ------------ Core  ------------
+    /* ------------ Core ------------ */
 
     private ResponseEntity<Object> exchange(
             HttpMethod method, String path, Long userId, Object body, Map<String, Object> uriParams) {
@@ -86,7 +86,8 @@ public class BaseClient {
         if (!filtered.containsKey(HttpHeaders.CONTENT_TYPE)) {
             filtered.setContentType(MediaType.APPLICATION_JSON);
         }
-        return ResponseEntity.status(down.getStatusCode())
+        return ResponseEntity
+                .status(down.getStatusCode())
                 .headers(filtered)
                 .body(down.getBody());
     }

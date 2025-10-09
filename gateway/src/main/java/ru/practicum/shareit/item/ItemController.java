@@ -1,68 +1,111 @@
 package ru.practicum.shareit.item;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.http.Headers;
 import ru.practicum.shareit.item.dto.CommentCreateDto;
 import ru.practicum.shareit.item.dto.ItemCreateDto;
 import ru.practicum.shareit.item.dto.ItemUpdateDto;
 
-@Validated
+import java.util.Map;
+
+@Slf4j
 @RestController
-@RequestMapping("/items")
 @RequiredArgsConstructor
+@RequestMapping("/items")
 public class ItemController {
 
-    private final ItemClient client;
+    private final ItemClient itemClient;
 
-    @GetMapping("/me")
-    public ResponseEntity<Object> me(@RequestHeader(Headers.USER_ID) @Positive long userId) {
-        return client.getOwnerItems(userId, 0, 10);
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> create(
+            @RequestHeader(value = Headers.USER_ID, required = false) Long userId,
+            @RequestBody ItemCreateDto dto
+    ) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing X-Sharer-User-Id header"));
+        }
+        if (dto == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Request body is required"));
+        }
+        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Item name must not be blank"));
+        }
+        if (dto.getDescription() == null || dto.getDescription().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Item description must not be blank"));
+        }
+        if (dto.getAvailable() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Item availability must be specified"));
+        }
+
+        return itemClient.create(userId, dto);
     }
 
-    @PostMapping
-    public ResponseEntity<Object> create(@RequestHeader(Headers.USER_ID) @Positive Long userId,
-                                         @Valid @RequestBody ItemCreateDto dto) {
-        return client.create(userId, dto);
+    @PatchMapping(path = "/{itemId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> update(
+            @RequestHeader(value = Headers.USER_ID, required = false) Long userId,
+            @PathVariable Long itemId,
+            @RequestBody ItemUpdateDto dto
+    ) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing X-Sharer-User-Id header"));
+        }
+        return itemClient.update(userId, itemId, dto);
     }
 
     @GetMapping("/{itemId}")
-    public ResponseEntity<Object> getById(@RequestHeader(Headers.USER_ID) @Positive Long userId,
-                                          @PathVariable @Positive Long itemId) {
-        return client.getById(userId, itemId);
+    public ResponseEntity<Object> getById(
+            @RequestHeader(value = Headers.USER_ID, required = false) Long userId,
+            @PathVariable Long itemId
+    ) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing X-Sharer-User-Id header"));
+        }
+        return itemClient.getById(userId, itemId);
     }
 
     @GetMapping
-    public ResponseEntity<Object> getOwnerItems(@RequestHeader(Headers.USER_ID) @Positive Long userId,
-                                                @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                                @RequestParam(defaultValue = "10") @Positive Integer size) {
-        return client.getOwnerItems(userId, from, size);
+    public ResponseEntity<Object> getOwnerItems(
+            @RequestHeader(value = Headers.USER_ID, required = false) Long userId,
+            @RequestParam(defaultValue = "0") int from,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing X-Sharer-User-Id header"));
+        }
+        return itemClient.getOwnerItems(userId, from, size);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Object> search(@RequestHeader(Headers.USER_ID) @Positive Long userId,
-                                         @RequestParam String text,
-                                         @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                         @RequestParam(defaultValue = "10") @Positive Integer size) {
-        return client.search(userId, text, from, size);
+    public ResponseEntity<Object> search(
+            @RequestHeader(value = Headers.USER_ID, required = false) Long userId,
+            @RequestParam String text,
+            @RequestParam(defaultValue = "0") int from,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing X-Sharer-User-Id header"));
+        }
+        return itemClient.search(userId, text, from, size);
     }
 
-    @PatchMapping("/{itemId}")
-    public ResponseEntity<Object> update(@RequestHeader(Headers.USER_ID) @Positive Long userId,
-                                         @PathVariable @Positive Long itemId,
-                                         @Valid @RequestBody ItemUpdateDto dto) {
-        return client.update(userId, itemId, dto);
+    @PostMapping(path = "/{itemId}/comment", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> addComment(
+            @RequestHeader(value = Headers.USER_ID, required = false) Long userId,
+            @PathVariable("itemId") Long itemId,
+            @RequestBody CommentCreateDto dto
+    ) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing X-Sharer-User-Id header"));
+        }
+        if (dto == null || dto.getText() == null || dto.getText().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Comment text must not be blank"));
+        }
+
+        return itemClient.addComment(userId, itemId, dto);
     }
 
-    @PostMapping("/{itemId}/comment")
-    public ResponseEntity<Object> addComment(@RequestHeader(Headers.USER_ID) @Positive Long userId,
-                                             @PathVariable @Positive Long itemId,
-                                             @Valid @RequestBody CommentCreateDto dto) {
-        return client.addComment(userId, itemId, dto);
-    }
 }

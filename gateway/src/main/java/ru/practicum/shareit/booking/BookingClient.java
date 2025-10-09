@@ -22,16 +22,12 @@ public class BookingClient extends BaseClient {
 
     private static final String API_PREFIX = "/bookings";
 
-    @SuppressWarnings("unused")
-    private final RestTemplate rest;
-
     @Autowired
     public BookingClient(@Value("${shareit.server.url}") String serverUrl,
                          RestTemplateBuilder builder) {
-        super(
-                builder
+        super(builder
                         .rootUri(serverUrl)
-                        .requestFactory(settings -> new HttpComponentsClientHttpRequestFactory())
+                        .requestFactory(cfg -> new HttpComponentsClientHttpRequestFactory())
                         .setConnectTimeout(Duration.ofSeconds(5))
                         .setReadTimeout(Duration.ofSeconds(30))
                         .errorHandler(new DefaultResponseErrorHandler() {
@@ -41,14 +37,11 @@ public class BookingClient extends BaseClient {
                             }
                         })
                         .build(),
-                serverUrl
-        );
-        this.rest = builder.build();
+                serverUrl);
     }
 
     public BookingClient(RestTemplate restTemplate) {
         super(restTemplate, "http://localhost:9090");
-        this.rest = restTemplate;
     }
 
     public ResponseEntity<Object> create(Long userId, BookingRequestDto dto) {

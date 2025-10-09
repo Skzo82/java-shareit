@@ -25,16 +25,13 @@ import java.time.Duration;
 public class ItemClient extends BaseClient {
 
     private static final String API_PREFIX = "/items";
-    @SuppressWarnings("unused")
-    private final RestTemplate rest;
 
     @Autowired
     public ItemClient(@Value("${shareit.server.url}") String serverUrl,
                       RestTemplateBuilder builder) {
-        super(
-                builder
+        super(builder
                         .rootUri(serverUrl)
-                        .requestFactory(settings -> new HttpComponentsClientHttpRequestFactory())
+                        .requestFactory(cfg -> new HttpComponentsClientHttpRequestFactory())
                         .setConnectTimeout(Duration.ofSeconds(5))
                         .setReadTimeout(Duration.ofSeconds(30))
                         .errorHandler(new DefaultResponseErrorHandler() {
@@ -44,14 +41,11 @@ public class ItemClient extends BaseClient {
                             }
                         })
                         .build(),
-                serverUrl
-        );
-        this.rest = builder.build();
+                serverUrl);
     }
 
     public ItemClient(RestTemplate restTemplate) {
         super(restTemplate, "http://localhost:9090");
-        this.rest = restTemplate;
     }
 
     public ResponseEntity<Object> create(Long userId, ItemCreateDto dto) {
