@@ -69,42 +69,41 @@ public class ItemController {
 
     @GetMapping
     public ResponseEntity<Object> getOwnerItems(
-            @RequestHeader(value = Headers.USER_ID, required = false) Long userId,
-            @RequestParam(defaultValue = "0") int from,
-            @RequestParam(defaultValue = "20") int size
+            @RequestHeader(Headers.USER_ID) Long userId,
+            @RequestParam(defaultValue = "0") Integer from,
+            @RequestParam(defaultValue = "20") Integer size
     ) {
-        if (userId == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Missing X-Sharer-User-Id header"));
+        if (from == null || from < 0 || size == null || size <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid pagination"));
         }
         return itemClient.getOwnerItems(userId, from, size);
     }
 
     @GetMapping("/search")
     public ResponseEntity<Object> search(
-            @RequestHeader(value = Headers.USER_ID, required = false) Long userId,
+            @RequestHeader(Headers.USER_ID) Long userId,
             @RequestParam String text,
-            @RequestParam(defaultValue = "0") int from,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "0") Integer from,
+            @RequestParam(defaultValue = "20") Integer size
     ) {
-        if (userId == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Missing X-Sharer-User-Id header"));
+        if (text == null || text.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Search text must not be blank"));
+        }
+        if (from == null || from < 0 || size == null || size <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid pagination"));
         }
         return itemClient.search(userId, text, from, size);
     }
 
     @PostMapping(path = "/{itemId}/comment", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> addComment(
-            @RequestHeader(value = Headers.USER_ID, required = false) Long userId,
-            @PathVariable("itemId") Long itemId,
+            @RequestHeader(Headers.USER_ID) Long userId,
+            @PathVariable Long itemId,
             @RequestBody CommentCreateDto dto
     ) {
-        if (userId == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Missing X-Sharer-User-Id header"));
-        }
         if (dto == null || dto.getText() == null || dto.getText().trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Comment text must not be blank"));
         }
-
         return itemClient.addComment(userId, itemId, dto);
     }
 
