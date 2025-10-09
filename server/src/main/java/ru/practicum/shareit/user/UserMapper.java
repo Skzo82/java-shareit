@@ -1,27 +1,26 @@
 package ru.practicum.shareit.user;
 
+import org.springframework.stereotype.Component;
 import ru.practicum.shareit.user.dto.UserDto;
 
-public final class UserMapper {
-    private UserMapper() {
-    }
+@Component
+public class UserMapper {
 
-    public static UserDto toDto(User u) {
-        if (u == null) return null;
-        return new UserDto(u.getId(), u.getName(), u.getEmail());
-    }
-
-    public static User toEntity(UserDto d) {
-        if (d == null) return null;
+    public User toEntity(UserDto dto) {
+        if (dto == null) return null;
         User u = new User();
-        u.setId(d.getId());
-        u.setName(d.getName());
-        u.setEmail(d.getEmail());
+        u.setId(dto.getId());
+        u.setName(dto.getName());
+        u.setEmail(dto.getEmail());
         return u;
     }
 
-    public static void updateEntity(User target, UserDto patch) {
-        if (patch.getName() != null) target.setName(patch.getName());
-        if (patch.getEmail() != null) target.setEmail(patch.getEmail());
+    public UserDto toDto(User u) {
+        if (u == null) return null;
+        return UserDto.builder()
+                .id(u.getId())
+                .name(u.getName())
+                .email(u.getEmail())
+                .build();
     }
 }

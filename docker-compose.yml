@@ -42,8 +42,8 @@ services:
 
   shareit-gateway:
     build:
-      context: ./gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: gateway/Dockerfile
     container_name: shareit-gateway
     depends_on:
       shareit-server:

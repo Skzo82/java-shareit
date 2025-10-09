@@ -1,12 +1,10 @@
 package ru.practicum.shareit.user;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserUpdateDto;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -16,27 +14,30 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public UserDto create(@RequestBody @Valid UserDto user) {
-        return userService.create(user);
+    public ResponseEntity<?> create(@RequestBody UserDto dto) {
+        return ResponseEntity.ok(userService.create(dto));
     }
 
-    @PatchMapping("/{id}")
-    public UserDto update(@PathVariable Long id, @RequestBody UserUpdateDto patch) {
-        return userService.updatePartial(id, patch);
+    @PatchMapping("/{userId}")
+    public ResponseEntity<?> update(@PathVariable long userId,
+                                    @RequestBody UserUpdateDto dto) {
+        return ResponseEntity.ok(userService.update(userId, dto));
     }
 
-    @GetMapping("/{id}")
-    public UserDto get(@PathVariable Long id) {
-        return userService.get(id);
+    @GetMapping("/{userId}")
+    public ResponseEntity<?> getById(@PathVariable long userId) {
+        return ResponseEntity.ok(userService.getById(userId));
     }
 
     @GetMapping
-    public List<UserDto> getAll() {
-        return userService.getAll();
+    public ResponseEntity<?> getAll(@RequestParam(defaultValue = "0") int from,
+                                    @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(userService.getAll(from, size));
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        userService.delete(id);
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<?> delete(@PathVariable long userId) {
+        userService.delete(userId);
+        return ResponseEntity.noContent().build();
     }
 }

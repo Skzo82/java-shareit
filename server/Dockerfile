@@ -1,28 +1,25 @@
+# ====== BUILD ======
 FROM maven:3.9-eclipse-temurin-21 AS build
-WORKDIR /app
+WORKDIR /workspace
 
-COPY ./pom.xml ./pom.xml
-COPY ./server/pom.xml ./server/pom.xml
-COPY ./gateway/pom.xml ./gateway/pom.xml
+COPY pom.xml .
+COPY server/pom.xml server/pom.xml
+COPY gateway/pom.xml gateway/pom.xml
 
-RUN mvn -q -e -U -DskipTests dependency:go-offline
+RUN mvn -q -DskipTests dependency:go-offline
 
-COPY . .
+COPY server/src server/src
+COPY gateway/src gateway/src
+
 RUN mvn -q -DskipTests -pl server -am package
 
-FROM eclipse-temurin:21-jre-alpine
+# ====== RUNTIME ======
+FROM eclipse-temurin:21-jre-jammy AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
-
-RUN apk add --no-cache curl
-
-COPY --from=build /app/server/target/*.jar /app/app.jar
-
-ENV SERVER_PORT=9090
-ENV JAVA_OPTS=""
+COPY --from=build /workspace/server/target/*.jar /app/app.jar
 
 EXPOSE 9090
-
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring
-
-ENTRYPOINT ["sh","-lc","exec java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app/app.jar"]
