@@ -3,6 +3,7 @@ package ru.practicum.shareit.error;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
@@ -26,6 +28,15 @@ public class ApiErrorHandler {
         Map<String, String> m = new HashMap<>();
         m.put("error", (message == null || message.isBlank()) ? "Validation failed" : message);
         return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(m);
+    }
+
+    @ExceptionHandler(HttpStatusCodeException.class)
+    public ResponseEntity<String> handleDownstream(HttpStatusCodeException ex) {
+        HttpHeaders headers = ex.getResponseHeaders() != null ? ex.getResponseHeaders() : new HttpHeaders();
+        if (!headers.containsKey(HttpHeaders.CONTENT_TYPE)) {
+            headers.setContentType(MediaType.APPLICATION_JSON);
+        }
+        return new ResponseEntity<>(ex.getResponseBodyAsString(), headers, ex.getStatusCode());
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)

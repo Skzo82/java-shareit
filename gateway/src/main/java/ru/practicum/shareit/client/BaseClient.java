@@ -1,6 +1,7 @@
 package ru.practicum.shareit.client;
 
 import org.springframework.http.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -12,13 +13,16 @@ public class BaseClient {
             "transfer-encoding", "content-length", "connection",
             "keep-alive", "proxy-connection", "te", "trailer", "upgrade"
     );
+
     protected final RestTemplate rest;
     private final String serverUrl;
 
     public BaseClient(RestTemplate restTemplate, String serverUrl) {
-        this.rest = restTemplate;          // <- campo si chiama 'rest'
+        this.rest = restTemplate;
         this.serverUrl = serverUrl;
     }
+
+    // ------------ API helper ------------
 
     protected ResponseEntity<Object> get(String path, Long userId) {
         return forward(exchange(HttpMethod.GET, path, userId, null, null));
@@ -40,28 +44,48 @@ public class BaseClient {
         return forward(exchange(HttpMethod.DELETE, path, userId, null, null));
     }
 
+    // ------------ Core  ------------
+
     private ResponseEntity<Object> exchange(
             HttpMethod method, String path, Long userId, Object body, Map<String, Object> uriParams) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        if (userId != null) headers.add("X-Sharer-User-Id", String.valueOf(userId));
+        if (userId != null) {
+            headers.add("X-Sharer-User-Id", String.valueOf(userId));
+        }
 
-        HttpEntity<Object> entity = (body == null) ? new HttpEntity<>(headers) : new HttpEntity<>(body, headers);
+        HttpEntity<Object> entity = (body == null)
+                ? new HttpEntity<>(headers)
+                : new HttpEntity<>(body, headers);
+
         String url = serverUrl + path;
 
-        if (uriParams == null || uriParams.isEmpty()) {
-            return rest.exchange(url, method, entity, Object.class);
-        } else {
-            return rest.exchange(url, method, entity, Object.class, uriParams);
+        try {
+            if (uriParams == null || uriParams.isEmpty()) {
+                return rest.exchange(url, method, entity, Object.class);
+            } else {
+                return rest.exchange(url, method, entity, Object.class, uriParams);
+            }
+        } catch (HttpStatusCodeException ex) {
+            HttpHeaders respHeaders = ex.getResponseHeaders() != null ? ex.getResponseHeaders() : new HttpHeaders();
+            if (!respHeaders.containsKey(HttpHeaders.CONTENT_TYPE)) {
+                respHeaders.setContentType(MediaType.APPLICATION_JSON);
+            }
+            return new ResponseEntity<>(ex.getResponseBodyAsString(), respHeaders, ex.getStatusCode());
         }
     }
 
     protected ResponseEntity<Object> forward(ResponseEntity<?> down) {
         HttpHeaders filtered = new HttpHeaders();
         down.getHeaders().forEach((k, v) -> {
-            if (!HOP_BY_HOP.contains(k.toLowerCase())) filtered.put(k, v);
+            if (!HOP_BY_HOP.contains(k.toLowerCase())) {
+                filtered.put(k, v);
+            }
         });
+        if (!filtered.containsKey(HttpHeaders.CONTENT_TYPE)) {
+            filtered.setContentType(MediaType.APPLICATION_JSON);
+        }
         return ResponseEntity.status(down.getStatusCode())
                 .headers(filtered)
                 .body(down.getBody());
