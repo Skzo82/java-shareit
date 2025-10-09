@@ -14,7 +14,6 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
@@ -30,14 +29,21 @@ public class ApiErrorHandler {
         return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(m);
     }
 
-    @ExceptionHandler(HttpStatusCodeException.class)
-    public ResponseEntity<String> handleDownstream(HttpStatusCodeException ex) {
-        HttpHeaders headers = ex.getResponseHeaders() != null ? ex.getResponseHeaders() : new HttpHeaders();
-        if (!headers.containsKey(HttpHeaders.CONTENT_TYPE)) {
-            headers.setContentType(MediaType.APPLICATION_JSON);
+    @ExceptionHandler(org.springframework.web.client.HttpStatusCodeException.class)
+    public ResponseEntity<String> handleHttpStatusCode(org.springframework.web.client.HttpStatusCodeException ex) {
+        HttpHeaders out = new HttpHeaders();
+        HttpHeaders in = ex.getResponseHeaders();
+        if (in != null) {
+            out.putAll(in);
         }
-        return new ResponseEntity<>(ex.getResponseBodyAsString(), headers, ex.getStatusCode());
+        if (!out.containsKey(HttpHeaders.CONTENT_TYPE)) {
+            out.setContentType(MediaType.APPLICATION_JSON);
+        }
+        return ResponseEntity.status(ex.getStatusCode())
+                .headers(out)
+                .body(ex.getResponseBodyAsString());
     }
+
 
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseEntity<Map<String, String>> handleMissingHeader(MissingRequestHeaderException ex) {
