@@ -35,5 +35,3 @@ INSERT INTO bookings (id, item_id, booker_id, start_time, end_time, status) VALU
 INSERT INTO comments (id, text, item_id, author_id, created) VALUES
   (1, 'Отличная дрель, всё работает!', 1, 2, CURRENT_TIMESTAMP - INTERVAL '12 hours'),
   (2, 'Инструмент в хорошем состоянии.', 2, 3, CURRENT_TIMESTAMP - INTERVAL '6 hours');
-
--- Не трогаем автоинкременты: реализуешь при необходимости через sequences, иначе можно omettere.
