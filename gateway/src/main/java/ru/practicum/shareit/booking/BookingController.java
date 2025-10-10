@@ -18,16 +18,11 @@ public class BookingController {
 
     private final BookingClient client;
 
-    @GetMapping("/ping")
-    public ResponseEntity<Object> ping(@RequestHeader(Headers.USER_ID) @Positive long userId) {
-        return client.getAllByUser(userId, "ALL", 0, 1);
-    }
-
     @PostMapping
     public ResponseEntity<Object> create(
-            @RequestHeader(Headers.USER_ID) Long userId,
+            @RequestHeader(Headers.USER_ID) @Positive Long userId,
             @Valid @RequestBody BookingRequestDto dto) {
-        return client.create(userId, dto); // pass-through
+        return client.create(userId, dto);
     }
 
     @PatchMapping("/{bookingId}")
