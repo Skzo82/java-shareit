@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_DB: shareit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d shareit" ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  shareit-server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: shareit-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shareit
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SERVER_PORT: "9090"
+    ports:
+      - "9090:9090"
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://localhost:9090/actuator/health" ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  shareit-gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: shareit-gateway
+    depends_on:
+      shareit-server:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: "8080"
+      SHAREIT_SERVER_URL: http://shareit-server:9090
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

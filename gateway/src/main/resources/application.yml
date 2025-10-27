@@ -1,0 +1,26 @@
+server:
+  port: ${SERVER_PORT:8080}
+  address: 0.0.0.0
+  http2:
+    enabled: false
+  compression:
+    enabled: false
+
+shareit:
+  server:
+    url: ${SHAREIT_SERVER_URL:http://localhost:9090}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    ru.practicum.shareit: DEBUG
